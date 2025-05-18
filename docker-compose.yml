@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:16 # Using PostgreSQL version 16
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: user # Replace with your desired user
+      POSTGRES_PASSWORD: password # Replace with a strong password!
+      POSTGRES_DB: cdc_source_db # Example database name
+    command:
+      - "postgres"                # The base command to run
+      - "-c"                      # Flag to pass a config parameter
+      - "wal_level=logical"       # Set wal_level
+      - "-c"
+      - "max_wal_senders=10"      # Set max_wal_senders
+      - "-c"
+      - "max_replication_slots=10" # Set max_replication_slots
+    ports:
+      - "5432:5432" # Expose PostgreSQL port to the host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-kraft-broker:
+    # Using Confluent's official Kafka image supporting KRaft
+    image: confluentinc/cp-kafka:7.6.1 # Use a version >= 7.0 for KRaft
+    container_name: kafka-kraft-broker
+    depends_on:
+      postgres-db: # Optional: Wait for DB health, useful if an app connects to both
+        condition: service_healthy
+    ports:
+      # Expose the main Kafka broker port (9092) to the host
+      - "9092:9092"
+      # Port 9093 is used internally for the KRaft controller listener
+      # - "9093:9093" # Usually not needed to expose controller port to host
+    environment:
+      # --- KRaft settings ---
+      # 1. Generate a Cluster ID *ONCE* using: docker run --rm confluentinc/cp-kafka:7.6.1 kafka-storage random-uuid
+      CLUSTER_ID: 'YourGeneratedClusterID' # <--- REPLACE THIS with the generated UUID
+      KAFKA_NODE_ID: 1 # Unique ID for this node
+      KAFKA_PROCESS_ROLES: 'broker,controller' # Single node acts as both
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-kraft-broker:9093' # Itself is the quorum voter (node_id@host:port)
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER' # Name of the listener for controllers
+
+      # --- Listener Configuration ---
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093' # Listen on 9092 for clients, 9093 for controller comms
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-kraft-broker:9092' # How clients connect (using service name within docker network)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+
+      # --- Broker Settings ---
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT' # Listener for broker-to-broker communication
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # Required for single-node cluster
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1 # Required for single-node cluster
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1 # Required for single-node cluster
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data' # Directory for Kafka log data (needs volume)
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 # Optional: speeds up consumer group joining in dev
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true # Optional: allows topics to be created automatically
+
+    volumes:
+      - kafka_kraft_data:/var/lib/kafka/data # Persist Kafka data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s # Give Kafka some time to start up before checking
+
+
+  # --- Add Redis Service ---
+  redis-cache:
+    image: redis:7-alpine # Using Redis 7 on Alpine base
+    container_name: redis-cache
+    ports:
+      - "6379:6379" # Expose default Redis port
+    command: redis-server --appendonly yes # Enable AOF persistence (optional but often good)
+    volumes:
+      - redis_data:/data # Persist data in /data directory inside container
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+# Define named volumes for data persistence
+volumes:
+  postgres_data:
+  kafka_kraft_data:
+  redis_data: # Add volume for Redis persistence
+
+# Optional: Define a custom network
+# networks:
+#   cdc_network:
+#     driver: bridge
+
+# Note: If using the network above, add 'networks: [cdc_network]' to each service.
