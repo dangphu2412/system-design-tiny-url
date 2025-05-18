@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "format": "prettier --write \"feed-server/src/**/*.ts\" \"feed-client/src/**/*.ts\" \"postgres-connector/src/**/*.ts\"",
+    "format": "prettier --write \"tinyurl-server/src/**/*.ts\" \"tinyurl-client/src/**/*.ts\"",
     "lint": "eslint \"{feed-server/src,feed-client/src,postgres-connector/src}/**/*.ts\" --fix",
     "prepare": "husky"
   },
