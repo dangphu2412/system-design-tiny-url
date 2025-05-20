@@ -1,11 +1,20 @@
-import {redirect} from "next/navigation"
+import {redirect, ReadonlyURLSearchParams} from "next/navigation"
+import {doRequest} from "@/shared/api-client/api-client";
 
-async function getLongUrl(url: string) {
-    return url + 'long'
+type ShortenURLResponse = {
+    id: string;
+    long_url: string;
+}
+
+async function getLongUrl(id: string) {
+    const { long_url } = await doRequest(`urls/${id}`, { method: "GET", headers: {
+            'Content-Type': 'application/json'
+        } }) as ShortenURLResponse;
+    return long_url;
 }
 
 export default async function ShortUrlRedirect({ params }: { params: { id: string } }) {
-    const { id } = params
+    const { id } = await params
     const longUrl = await getLongUrl(id)
 
     if (longUrl) {

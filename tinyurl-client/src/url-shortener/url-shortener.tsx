@@ -10,11 +10,14 @@ import {Check, Copy, Link} from "lucide-react"
 import { doRequest } from '@/shared/api-client/api-client';
 
 function shortenUrl(url: string) {
-    return doRequest('/shorten', {
+    return doRequest('urls', {
         method: 'POST',
         body: JSON.stringify({
             url
-        })
+        }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
 }
 
@@ -42,9 +45,10 @@ export function UrlShortener() {
                 throw new Error("Please enter a valid URL (include http:// or https://)")
             }
 
-            const result = await shortenUrl(url)
-            setShortUrl(result)
+            const { id } = await shortenUrl(url)
+            setShortUrl(`${window.location}${id}`)
         } catch (err) {
+            console.log(err)
             setError(err instanceof Error ? err.message : "An error occurred")
         } finally {
             setIsLoading(false)

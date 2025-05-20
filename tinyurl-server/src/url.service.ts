@@ -26,6 +26,7 @@ export class UrlService {
   ) {}
 
   async createOne(dto: CreateUrlDTO) {
+    console.log(dto)
     const { url } = await CreateUrlDTOSchema.parseAsync(dto);
     let attempt = 0;
 
@@ -71,7 +72,7 @@ export class UrlService {
           { prepare: true },
         );
 
-        return shortId;
+        return { id: shortId };
       } else {
         console.warn(`LWT conflict on attempt ${attempt}, retrying...`);
         await new Promise((res) => setTimeout(res, 50 * attempt)); // exponential-ish backoff
@@ -87,9 +88,11 @@ export class UrlService {
     return this.client.execute(query);
   }
 
-  findById(id: string) {
+  async findById(id: string) {
     const query = `SELECT * FROM urls where id = ?`;
 
-    return this.client.execute(query, [id]);
+    const resultSet = await this.client.execute(query, [id]);
+
+    return resultSet.rows[0];
   }
 }
