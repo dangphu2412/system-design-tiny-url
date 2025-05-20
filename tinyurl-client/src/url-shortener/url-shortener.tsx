@@ -7,9 +7,15 @@ import {Input} from "@/components/ui/input"
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
 import {Label} from "@/components/ui/label"
 import {Check, Copy, Link} from "lucide-react"
+import { doRequest } from '@/shared/api-client/api-client';
 
-async function shortenUrl(url: string) {
-    return url + 'url-shortener'
+function shortenUrl(url: string) {
+    return doRequest('/shorten', {
+        method: 'POST',
+        body: JSON.stringify({
+            url
+        })
+    })
 }
 
 export function UrlShortener() {
