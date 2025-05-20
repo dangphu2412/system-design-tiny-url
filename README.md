@@ -85,3 +85,7 @@ Average long URL size is 2Kb for 2048 characters (Max browser URL)
 > Given a url, generate a shorter and unique alias of it.
 - A Key Value database should be the best fit.
 - Also offer a scalable read database over the write overhead.
+
+## Cache storage
+
+## Job for cleaning data over 5 years

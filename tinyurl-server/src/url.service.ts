@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Client } from 'cassandra-driver';
+import { Client, types } from 'cassandra-driver';
 import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
+import Long = types.Long;
 
 const MAX_RETRIES = 5;
 
@@ -26,60 +27,69 @@ export class UrlService {
   ) {}
 
   async createOne(dto: CreateUrlDTO) {
-    console.log(dto)
     const { url } = await CreateUrlDTOSchema.parseAsync(dto);
     let attempt = 0;
 
     while (attempt < MAX_RETRIES) {
       attempt++;
 
-      // 1. Read current counter
-      const res = await this.client.execute(
-        'SELECT value FROM counter WHERE key = ?',
-        ['url_id'],
-        { prepare: true },
-      );
+      const currentCounterResultSet = await this.findCurrentCounter();
 
-      if (!res.rowLength) {
-        await this.client.execute(
-          'INSERT INTO counter (key, value) VALUES (?, ?) IF NOT EXISTS',
-          ['url_id', 0],
-          { prepare: true },
-        );
+      if (!currentCounterResultSet.rowLength) {
+        await this.insertFirstCounter();
       }
 
-      const current =
-        res.rowLength > 0
-          ? +(res.first().get('value') as unknown as string)
-          : 0;
-      const next = current + 1;
+      const currentCounter =
+        currentCounterResultSet.rowLength > 0
+          ? (currentCounterResultSet.first().get('value') as unknown as Long)
+          : Long.fromNumber(0);
 
-      // 2. Try to write using LWT
-      const lwtRes = await this.client.execute(
+      const next = currentCounter.add(1);
+
+      // 2. Try to write using Lightweight Transaction
+      const lightWeightTransactionResultSet = await this.client.execute(
         'UPDATE counter SET value = ? WHERE key = ? IF value = ?',
-        [next, 'url_id', current],
+        [next.toNumber(), 'url_id', currentCounter.toNumber()],
         { prepare: true },
       );
 
-      if (lwtRes.wasApplied()) {
-        const shortId = intToBase62(next);
-        Logger.log(`Storing id: ${shortId} and url: ${url}`);
-
-        // 3. Insert the short URL
-        await this.client.execute(
-          'INSERT INTO urls (id, long_url, created_at) VALUES (?, ?, toTimestamp(now()))',
-          [shortId, url],
-          { prepare: true },
-        );
-
-        return { id: shortId };
-      } else {
-        console.warn(`LWT conflict on attempt ${attempt}, retrying...`);
+      // When LWT failed in race condition, fire backoff event
+      if (!lightWeightTransactionResultSet.wasApplied()) {
+        Logger.warn(`LWT conflict on attempt ${attempt}, retrying...`);
         await new Promise((res) => setTimeout(res, 50 * attempt)); // exponential-ish backoff
+        return;
       }
+
+      const shortId = intToBase62(next.toNumber());
+      Logger.log(`Storing id: ${shortId} and url: ${url}`);
+
+      // 3. Insert the short URL
+      await this.client.execute(
+        'INSERT INTO urls (id, long_url, created_at) VALUES (?, ?, toTimestamp(now()))',
+        [shortId, url],
+        { prepare: true },
+      );
+
+      return { id: shortId };
     }
 
     throw new Error('Could not generate a short URL after multiple retries.');
+  }
+
+  private insertFirstCounter() {
+    return this.client.execute(
+      'INSERT INTO counter (key, value) VALUES (?, ?) IF NOT EXISTS',
+      ['url_id', 0],
+      { prepare: true },
+    );
+  }
+
+  private findCurrentCounter() {
+    return this.client.execute(
+      'SELECT value FROM counter WHERE key = ?',
+      ['url_id'],
+      { prepare: true },
+    );
   }
 
   find() {
