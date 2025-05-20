@@ -33,42 +33,20 @@ export class UrlService {
     while (attempt < MAX_RETRIES) {
       attempt++;
 
-      const currentCounterResultSet = await this.findCurrentCounter();
-
-      if (!currentCounterResultSet.rowLength) {
-        await this.insertFirstCounter();
-      }
-
-      const currentCounter =
-        currentCounterResultSet.rowLength > 0
-          ? (currentCounterResultSet.first().get('value') as unknown as Long)
-          : Long.fromNumber(0);
-
+      const currentCounter = await this.findCurrentCounterOrInitIfNotExist();
       const next = currentCounter.add(1);
 
-      // 2. Try to write using Lightweight Transaction
-      const lightWeightTransactionResultSet = await this.client.execute(
-        'UPDATE counter SET value = ? WHERE key = ? IF value = ?',
-        [next.toNumber(), 'url_id', currentCounter.toNumber()],
-        { prepare: true },
+      const success = await this.tryUpdateCounter(
+        currentCounter,
+        next,
+        attempt,
       );
-
-      // When LWT failed in race condition, fire backoff event
-      if (!lightWeightTransactionResultSet.wasApplied()) {
-        Logger.warn(`LWT conflict on attempt ${attempt}, retrying...`);
-        await new Promise((res) => setTimeout(res, 50 * attempt)); // exponential-ish backoff
-        return;
-      }
+      if (!success) continue;
 
       const shortId = intToBase62(next.toNumber());
       Logger.log(`Storing id: ${shortId} and url: ${url}`);
 
-      // 3. Insert the short URL
-      await this.client.execute(
-        'INSERT INTO urls (id, long_url, created_at) VALUES (?, ?, toTimestamp(now()))',
-        [shortId, url],
-        { prepare: true },
-      );
+      await this.createShortUrl(shortId, url);
 
       return { id: shortId };
     }
@@ -76,18 +54,53 @@ export class UrlService {
     throw new Error('Could not generate a short URL after multiple retries.');
   }
 
-  private insertFirstCounter() {
-    return this.client.execute(
-      'INSERT INTO counter (key, value) VALUES (?, ?) IF NOT EXISTS',
-      ['url_id', 0],
-      { prepare: true },
-    );
-  }
-
-  private findCurrentCounter() {
-    return this.client.execute(
+  private async findCurrentCounterOrInitIfNotExist() {
+    const currentCounterResultSet = await this.client.execute(
       'SELECT value FROM counter WHERE key = ?',
       ['url_id'],
+      { prepare: true },
+    );
+
+    if (!currentCounterResultSet.rowLength) {
+      await this.client.execute(
+        'INSERT INTO counter (key, value) VALUES (?, ?) IF NOT EXISTS',
+        ['url_id', 0],
+        { prepare: true },
+      );
+      return Long.fromNumber(0);
+    }
+
+    return currentCounterResultSet.first().get('value') as Long;
+  }
+
+  private async tryUpdateCounter(
+    current: Long,
+    next: Long,
+    attempt: number,
+  ): Promise<boolean> {
+    const res = await this.client.execute(
+      'UPDATE counter SET value = ? WHERE key = ? IF value = ?',
+      [next.toNumber(), 'url_id', current.toNumber()],
+      { prepare: true },
+    );
+
+    if (!res.wasApplied()) {
+      Logger.warn(`LWT conflict on attempt ${attempt}, retrying...`);
+      await this.backoff(attempt);
+      return false;
+    }
+
+    return true;
+  }
+
+  private async backoff(attempt: number): Promise<void> {
+    await new Promise((res) => setTimeout(res, 50 * attempt));
+  }
+
+  private async createShortUrl(id: string, url: string): Promise<void> {
+    await this.client.execute(
+      'INSERT INTO urls (id, long_url, created_at) VALUES (?, ?, toTimestamp(now()))',
+      [id, url],
       { prepare: true },
     );
   }
