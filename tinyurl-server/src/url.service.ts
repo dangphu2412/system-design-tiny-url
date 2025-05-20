@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Client, types } from 'cassandra-driver';
 import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import Long = types.Long;
 
 const MAX_RETRIES = 5;
@@ -24,6 +25,8 @@ export class UrlService {
   constructor(
     @Inject('CASSANDRA_CLIENT')
     private readonly client: Client,
+    @Inject(CACHE_MANAGER)
+    private readonly cache: Cache,
   ) {}
 
   async createOne(dto: CreateUrlDTO) {
@@ -103,6 +106,9 @@ export class UrlService {
       [id, url],
       { prepare: true },
     );
+    // Write through cache
+    const TWENTY_FOUR_HOURS_CACHE_TTL = 1000 * 60 * 60 * 24;
+    await this.cache.set(id, url, TWENTY_FOUR_HOURS_CACHE_TTL);
   }
 
   find() {
@@ -112,6 +118,16 @@ export class UrlService {
   }
 
   async findById(id: string) {
+    const url = await this.cache.get<string>(id);
+
+    if (url !== null) {
+      Logger.log(`Found cached ${url}`);
+
+      return {
+        long_url: url,
+      };
+    }
+
     const query = `SELECT * FROM urls where id = ?`;
 
     const resultSet = await this.client.execute(query, [id]);
