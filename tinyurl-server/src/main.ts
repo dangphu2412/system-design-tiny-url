@@ -50,6 +50,12 @@ import { UrlService } from './url.service';
               created_at timestamp
             );`.replace(/\n*/g, ''),
         );
+        await client.execute(
+          `CREATE TABLE IF NOT EXISTS shortener.counter (
+                key text PRIMARY KEY,
+                value bigint
+            );`.replace(/\n*/g, ''),
+        );
         client.on('log', (level, loggerName, message) => {
           Logger.log(
             `${level} - ${loggerName}:  ${message}`,
