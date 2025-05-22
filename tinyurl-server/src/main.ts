@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { Client } from 'cassandra-driver';
@@ -14,11 +14,12 @@ import { UrlService } from './url.service';
       envFilePath: '.env', // Specify the .env file path
     }),
     CacheModule.registerAsync({
-      useFactory: () => {
+      useFactory: (configService: ConfigService) => {
         return {
-          stores: [createKeyv('redis://localhost:6379')],
+          stores: [createKeyv(configService.getOrThrow('REDIS_URL'))],
         };
       },
+      inject: [ConfigService],
       isGlobal: true,
     }),
   ],
@@ -26,10 +27,11 @@ import { UrlService } from './url.service';
   providers: [
     UrlService,
     {
+      inject: [ConfigService],
       provide: 'CASSANDRA_CLIENT',
-      useFactory: async () => {
+      useFactory: async (configService: ConfigService) => {
         const client = new Client({
-          contactPoints: ['localhost'],
+          contactPoints: [configService.getOrThrow('CASSANDRA_CONTACT_POINTS')],
           localDataCenter: 'dc1',
           // keyspace: 'url_keyspace',
         });
