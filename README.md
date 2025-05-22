@@ -86,5 +86,18 @@ Average long URL size is 2Kb for 2048 characters (Max browser URL)
 - Also offer a scalable read database over the write overhead.
 
 ## Cache storage
+- 20% of URLs can be stored in a cache
+- 28 Gb * 0.2 = 5.6 Gb
 
 ## Job for cleaning data over 5 years
+- Define a scheduled job run per 5 years to clean up least access data.
+- The job to iterate over the database which may causing overhead to the database in the cleaning time. So how do we avoid pressure on the database?
+- Also, we need to invalidate the cached url as well?
+
+## Performance testing
+
+## Scale strategy
+- Application scale
+- Cache server scale
+  - Setup redis cluster
+- Database scale
