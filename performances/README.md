@@ -85,3 +85,46 @@ This simulates users creating shortened URLs.
 4. **Batch pre-generating short codes** (optional):
 
     * If you want to make POSTs faster at scale, consider having a pool of pre-generated codes to avoid runtime generation bottlenecks.
+
+
+# Testing with 200 concurrent users with read:write rate 100:1
+
+Thanks for sharing your Locust test result. Let's break it down and analyze the numbers with your goal in mind: **100 reads per 1 write** — which you're following quite well here.
+
+---
+
+### 📊 Summary of Request Results
+
+| Metric                    | `GET /:shortCode` (Read) | `POST /urls` (Write) | Total        |
+| ------------------------- | ------------------------ | -------------------- | ------------ |
+| **Request Count**         | `309,918`                | `3,083`              | `313,001`    |
+| **Failure Count**         | `0`                      | `0`                  | ✅ All passed |
+| **RPS (Requests/sec)**    | `840.45`                 | `8.36`               |              |
+| **Median Response Time**  | `21 ms`                  | `67 ms`              |              |
+| **Average Response Time** | `31.2 ms`                | `99.5 ms`            |              |
+| **Max Response Time**     | `~1.2 s`                 | `~1.1 s`             |              |
+
+---
+
+### ✅ What’s Looking Good
+
+* **Zero failures**: That’s a huge win. Your app is stable under load.
+* **Proper ratio**: You’re very close to the intended 100:1 read-to-write ratio (`309,918 / 3,083 ≈ 100.5`).
+* **Fast reads**: Median read response time is solid at `21ms` and average at `31ms`, which is good for high-QPS APIs.
+* **Writes holding up**: While slower than reads (expected), `99ms` avg response is still decent.
+
+---
+
+### ⚠️ Things Worth Noting
+
+1. **Long Tail on Latency (Max/Percentiles)**:
+
+    * Some GETs take **up to 1.2 seconds**, and 99.9th percentile is **\~0.5s**. For a TinyURL-style app, those outliers might impact UX, especially under load.
+    * POSTs also spike to **\~1.1s max**, with 95th and 99th percentiles in the **290–540ms** range.
+
+   💡 **Suggestion**: Add a histogram or time series to correlate spikes with request volume or resource limits.
+
+2. **RPS capacity**:
+
+    * You're getting \~840 RPS on GETs and \~8 on POSTs.
+    * That implies your infra is handling read-heavy traffic well, but if your write path grows (e.g., due to viral usage), you might need to assess DB/indexing bottlenecks.
