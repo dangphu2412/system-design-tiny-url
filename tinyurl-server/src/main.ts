@@ -6,7 +6,7 @@ import { createKeyv } from '@keyv/redis';
 import { Client } from 'cassandra-driver';
 import { UrlController } from './url.controller';
 import { UrlService } from './url.service';
-import * as morgan from 'morgan';
+import morgan from 'morgan';
 
 @Module({
   imports: [
@@ -73,7 +73,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
   });
-  app.use(morgan);
+  app.use(morgan('common'));
   await app.listen(process.env.PORT ?? 3000);
   Logger.log(`${await app.getUrl()}`);
 }
