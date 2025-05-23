@@ -34,6 +34,7 @@
     "graphql": "^16.11.0",
     "graphql-scalars": "^1.24.2",
     "lodash": "^4.17.21",
+    "morgan": "^1.10.0",
     "nest-commander": "^3.17.0",
     "pg": "^8.15.6",
     "pg-logical-replication": "^2.0.7",

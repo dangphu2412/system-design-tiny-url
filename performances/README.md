@@ -128,3 +128,95 @@ Thanks for sharing your Locust test result. Let's break it down and analyze the 
 
     * You're getting \~840 RPS on GETs and \~8 on POSTs.
     * That implies your infra is handling read-heavy traffic well, but if your write path grows (e.g., due to viral usage), you might need to assess DB/indexing bottlenecks.
+
+# Running concurrent with rate 5:1
+Yup — this latest test output shows **your app is getting crushed under write load**. Let's break it down like an engineer 👇
+
+---
+
+## 🧾 Summary Breakdown
+
+### ✅ **GET /\:shortCode (Read)**
+
+* **Requests**: 68,578
+* **Failures**: 0 ✅
+* **Median Response Time**: 48ms
+* **Average**: 64ms
+* **P99**: \~320ms
+* **Max**: \~2.3s
+
+> **Conclusion**: Your read path is holding strong. Good performance & reliability even at scale.
+
+---
+
+### ❌ **POST /urls (Write)**
+
+* **Requests**: 13,777
+* **Failures**: 6,858 (!!! more than 49%) 🔥
+* **Median Response Time**: 1100ms
+* **P95**: 1600ms
+* **Max**: \~3.1s
+
+> **Conclusion**: Your **write endpoint is failing hard**:
+
+* \~**50% of requests are failing**
+* **Slow** even when it works (median = 1.1s)
+
+---
+
+## 🧠 Diagnosis & Hypotheses
+
+### 1. **Write throughput is too high**
+
+* You're pushing 13k+ writes — that’s **way heavier** than your app can handle.
+* Locust is simulating a **10:1 read/write ratio**, but your backend may not scale for this volume of concurrent `POST /urls`.
+
+---
+
+### 2. **Server-side bottlenecks**
+
+Check for these backend issues:
+
+* **DB contention / locks** (e.g., Cassandra inserts)
+* **No connection pooling / reuse**
+* **Synchronous I/O** blocking main thread
+* **Rate-limiting** or app-level throttling errors
+* **Bad retries** or unhandled exceptions
+
+Use logs and monitoring to confirm.
+
+---
+
+### 3. **Cassandra overload or misconfig**
+
+* Cassandra doesn't like lots of small writes unless tuned for it.
+* Check if it's:
+
+    * Under heavy write pressure
+    * Rejecting connections (timeout / overload)
+    * Experiencing GC pauses
+
+---
+
+## ✅ Recommendations
+
+### ✅ 1. Fix backend stability for `POST /urls`
+
+* Log errors → are you getting 5xx, timeouts, DB errors?
+* Add retry/backoff on transient failures (e.g., Cassandra)
+* Optimize your insert pipeline (batching, async, pool)
+
+### ✅ 3. Monitor your backend
+
+Track:
+
+* CPU/mem usage
+* Cassandra connection pool
+* Errors thrown
+* Garbage collection (if Node.js or JVM involved)
+
+---
+
+### ✅ 4. Bonus: Warm up short code pool
+
+If most reads are failing because they can't find valid `shortCodes`, preload a bunch before the test starts.

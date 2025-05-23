@@ -6,6 +6,7 @@ import { createKeyv } from '@keyv/redis';
 import { Client } from 'cassandra-driver';
 import { UrlController } from './url.controller';
 import { UrlService } from './url.service';
+import * as morgan from 'morgan';
 
 @Module({
   imports: [
@@ -58,12 +59,7 @@ import { UrlService } from './url.service';
                 value bigint
             );`.replace(/\n*/g, ''),
         );
-        client.on('log', (level, loggerName, message) => {
-          Logger.log(
-            `${level} - ${loggerName}:  ${message}`,
-            'CASSANDRA_CLIENT',
-          );
-        });
+
         client.keyspace = 'shortener';
         return client;
       },
@@ -77,6 +73,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
   });
+  app.use(morgan);
   await app.listen(process.env.PORT ?? 3000);
   Logger.log(`${await app.getUrl()}`);
 }
