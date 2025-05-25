@@ -4,9 +4,9 @@ import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as crypto from 'crypto';
 
-
 function toBase62(num: number): string {
-  const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const BASE62 =
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   let str = '';
   while (num > 0) {

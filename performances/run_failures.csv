@@ -1,2 +1,3 @@
 Method,Name,Error,Occurrences
-POST,/urls,HTTPError('500 Server Error: Internal Server Error for url: /urls'),6858
+POST,/urls,HTTPError('502 Server Error: Bad Gateway for url: /urls'),52
+GET,/:shortCode,HTTPError('502 Server Error: Bad Gateway for url: /:shortCode'),5793

@@ -17,6 +17,13 @@ spec:
       containers:
         - name: tinyurl-server
           image: chuotcona123/tinyurl-server:latest
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
           ports:
             - containerPort: 3001
           env:
@@ -50,6 +57,7 @@ metadata:
   name: node-app-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-next-upstream-tries: "3"
 spec:
   rules:
     - host: localhost
@@ -63,3 +71,24 @@ spec:
                 port:
                   number: 3000
 
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tinyurl-server-autoscaler
+  labels:
+    app: tinyurl-server
+spec:
+  maxReplicas: 4
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tinyurl-server-deployment
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
