@@ -6,7 +6,7 @@ import { createKeyv } from '@keyv/redis';
 import { Client } from 'cassandra-driver';
 import { UrlController } from './url.controller';
 import { UrlService } from './url.service';
-import morgan from 'morgan';
+import * as morgan from 'morgan';
 
 @Module({
   imports: [
@@ -34,7 +34,6 @@ import morgan from 'morgan';
         const client = new Client({
           contactPoints: [configService.getOrThrow('CASSANDRA_CONTACT_POINTS')],
           localDataCenter: 'dc1',
-          // keyspace: 'url_keyspace',
         });
         await client.connect();
 
@@ -51,12 +50,6 @@ import morgan from 'morgan';
               id text PRIMARY KEY,
               long_url text,
               created_at timestamp
-            );`.replace(/\n*/g, ''),
-        );
-        await client.execute(
-          `CREATE TABLE IF NOT EXISTS shortener.counter (
-                key text PRIMARY KEY,
-                value bigint
             );`.replace(/\n*/g, ''),
         );
 

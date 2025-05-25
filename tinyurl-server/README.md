@@ -30,3 +30,8 @@ $ pnpm run test:e2e
 # test coverage
 $ pnpm run test:cov
 ```
+
+# Short ID rule
+7 bit length
+Must be unique
+Each word is in base62 format 
