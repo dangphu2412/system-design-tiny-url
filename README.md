@@ -43,7 +43,7 @@ So, how do we generate the shorter link?
 - Hashing: technique of transformation from 1 input to the same output, no way traverse back, took time due to computing resources.
   - MD5 or SHA256 generate **256bits** output, its a long string
 - Encoding: technique of transformation from 1 input to the same output, can decode, 1-1 unique generation
-  - Base62: from by a-z, A-Z, 0-9 (26+26+10=62), the generation always output a longer one.
+  - Base62: from by a-z, A-Z, 0-9 (26+26+10=62).
 - Counter increment: Eventually increase, no duplication.
   - Counter of database can reach a maximum size of number:
     - integer: 4 bytes
@@ -72,6 +72,39 @@ But we need only 7 characters, so result in 4,967,295 (not even fit for 1 year)
 - For full string, it is unique, but we need length of 7 only, so the cut **can be duplicated** (NO)
 
 > Possible solution is Base62 generation
+
+To ensure the generation not randomly duplicated, we generate:
+Yeah, for sure! Here's a short breakdown of how this short ID generator works:
+
+---
+
+### 🔐 **ShortIdFactory - Short ID Generation Algorithm**
+
+This service creates **7-character base62 IDs** using a mix of time and randomness:
+
+1. **Timestamp-based part**
+
+  * Takes the **last 8 digits** of `Date.now()` → gives \~27 bits of data.
+  * This adds time-based uniqueness, so IDs are sort of chronological.
+
+2. **Random part**
+
+  * Generates a random number from `0` to `62³` (\~18 bits).
+  * Ensures that even IDs generated in the same millisecond are still different.
+
+3. **Combine & Convert**
+
+  * Combines the timestamp and randomness into one big number.
+  * Converts it into **base62** (`0-9a-zA-Z`) → makes it compact.
+  * Pads to 7 characters and slices to keep it clean.
+
+---
+
+### 🧠 Why it works
+
+* Base62 encoding packs more info into fewer characters.
+* Combining time + randomness avoids collisions for most use cases.
+* Always outputs a fixed-length, URL-friendly string.
 
 ## Data Capacity Modeling
 For 5 years:

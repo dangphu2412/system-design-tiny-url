@@ -2,42 +2,23 @@ import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 import { Client } from 'cassandra-driver';
 import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import * as crypto from 'crypto';
-
-function toBase62(num: number): string {
-  const BASE62 =
-    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-  let str = '';
-  while (num > 0) {
-    str = BASE62[num % 62] + str;
-    num = Math.floor(num / 62);
-  }
-  return str || '0';
-}
-
-export function generateShortId(): string {
-  const timestamp = Date.now() % 1e8; // last 8 digits of timestamp (~27 bits)
-  const random = crypto.randomInt(0, 62 ** 3); // ~18 bits of randomness
-  const idNumber = timestamp * 62 ** 3 + random; // combine both
-
-  return toBase62(idNumber).padStart(7, '0').slice(0, 7); // trim to 7 chars
-}
+import { ShortIdFactory } from './shortid-factory';
+import { DATABASE_TOKEN } from './database';
 
 @Injectable()
 export class UrlService {
   constructor(
-    @Inject('CASSANDRA_CLIENT')
+    @Inject(DATABASE_TOKEN)
     private readonly client: Client,
     @Inject(CACHE_MANAGER)
     private readonly cache: Cache,
+    private readonly shortIdFactory: ShortIdFactory,
   ) {}
 
   async createOne(dto: CreateUrlDTO) {
     const { url } = await CreateUrlDTOSchema.parseAsync(dto);
 
-    const shortId = generateShortId();
-    Logger.log(`Storing id: ${shortId} and url: ${url}`);
+    const shortId = this.shortIdFactory.get();
 
     await this.createShortUrl(shortId, url);
 
@@ -45,6 +26,8 @@ export class UrlService {
   }
 
   private async createShortUrl(id: string, url: string): Promise<void> {
+    Logger.log(`Storing id: ${id} and url: ${url}`, UrlService);
+
     const result = await this.client.execute(
       'INSERT INTO urls (id, long_url, created_at) VALUES (?, ?, toTimestamp(now())) IF NOT EXISTS',
       [id, url],
@@ -77,6 +60,7 @@ export class UrlService {
       };
     }
 
+    // TODO: Need to prevent cache bursting
     const query = `SELECT * FROM urls where id = ?`;
 
     const resultSet = await this.client.execute(query, [id]);

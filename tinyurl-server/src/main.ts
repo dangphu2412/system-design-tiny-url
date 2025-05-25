@@ -3,16 +3,17 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
-import { Client } from 'cassandra-driver';
 import { UrlController } from './url.controller';
 import { UrlService } from './url.service';
 import * as morgan from 'morgan';
+import { ShortIdFactory } from './shortid-factory';
+import { DatabaseProvider } from './database';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Make ConfigModule available globally
-      envFilePath: '.env', // Specify the .env file path
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     CacheModule.registerAsync({
       useFactory: (configService: ConfigService) => {
@@ -25,39 +26,7 @@ import * as morgan from 'morgan';
     }),
   ],
   controllers: [UrlController],
-  providers: [
-    UrlService,
-    {
-      inject: [ConfigService],
-      provide: 'CASSANDRA_CLIENT',
-      useFactory: async (configService: ConfigService) => {
-        const client = new Client({
-          contactPoints: [configService.getOrThrow('CASSANDRA_CONTACT_POINTS')],
-          localDataCenter: 'dc1',
-        });
-        await client.connect();
-
-        await client.execute(
-          `CREATE KEYSPACE IF NOT EXISTS shortener
-            WITH replication = {
-              'class': 'SimpleStrategy',
-              'replication_factor': 1
-            };
-        `.replace(/\n*/g, ''),
-        );
-        await client.execute(
-          `CREATE TABLE IF NOT EXISTS shortener.urls (
-              id text PRIMARY KEY,
-              long_url text,
-              created_at timestamp
-            );`.replace(/\n*/g, ''),
-        );
-
-        client.keyspace = 'shortener';
-        return client;
-      },
-    },
-  ],
+  providers: [UrlService, ShortIdFactory, DatabaseProvider],
 })
 class AppModule {}
 
