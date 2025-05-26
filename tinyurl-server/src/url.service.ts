@@ -39,8 +39,8 @@ export class UrlService {
     }
 
     // Write through cache
-    const TWENTY_FOUR_HOURS_CACHE_TTL = 1000 * 60 * 60 * 24;
-    await this.cache.set(id, url, TWENTY_FOUR_HOURS_CACHE_TTL);
+    const TEN_SECONDS_TTL = 1000 * 10;
+    await this.cache.set(id, url, TEN_SECONDS_TTL);
   }
 
   find() {
