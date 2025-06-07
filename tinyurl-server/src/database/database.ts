@@ -26,7 +26,7 @@ export const DatabaseProvider: Provider = {
       `CREATE TABLE IF NOT EXISTS shortener.urls (
               id text PRIMARY KEY,
               long_url text,
-              created_at timestamp
+              created_at timestamp,
             );`.replace(/\n*/g, ''),
     );
 

@@ -3,7 +3,7 @@ import { Client } from 'cassandra-driver';
 import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ShortIdFactory } from './shortid-factory';
-import { DATABASE_TOKEN } from './database';
+import { DATABASE_TOKEN } from '../database/database';
 
 @Injectable()
 export class UrlService {

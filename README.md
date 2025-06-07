@@ -20,15 +20,14 @@ The service will create an alias for the original URL with a shorter length. If 
 - When user accesses short link, redirect them to the original url
 
 ## Nonfunctional Requirements:
-  - [] 99.99% Availability
+  - [x] 99.99% Availability
   - [] 150ms latency on redirection
   - [] Links expire at 5 years by default
   - [] Should perform globally
   - [x] All urls are public
   - [x] Each url is 2Kb
-  - [] 20% of URLs can be stored in a cache
   - [x] Cache TTL 24 hrs
-  - [] Estimated Usage
+  - [x] Estimated Usage
   - [x] 100 Reads per Write
   - [x] 500,000 urls created every month
 ## References:
@@ -73,12 +72,11 @@ But we need only 7 characters, so result in 4,967,295 (not even fit for 1 year)
 
 > Possible solution is Base62 generation
 
-To ensure the generation not randomly duplicated, we generate:
-Yeah, for sure! Here's a short breakdown of how this short ID generator works:
+## To ensure the generation not randomly duplicated, we generate:
 
----
+### 🔐 Short ID Generation Algorithm
 
-### 🔐 **ShortIdFactory - Short ID Generation Algorithm**
+Detail implementation [here](https://github.com/dangphu2412/system-design-tiny-url/blob/18f100f4c558ee6171aba6f4c6a50ff998ec641a/tinyurl-server/src/tiny-url/shortid-factory.ts)
 
 This service creates **7-character base62 IDs** using a mix of time and randomness:
 
@@ -110,8 +108,11 @@ This service creates **7-character base62 IDs** using a mix of time and randomne
 For 5 years:
 30mil
 Average long URL size is 2Kb for 2048 characters (Max browser URL)
+
+```
 1 character = 1 byte -> 2048 characters = 2Kb
 30.000.000 * 2 = 30.000.000 Kb ~ 29296 Mb ~ 28 Gb
+```
 
 ## Database
 > Given a url, generate a shorter and unique alias of it.
