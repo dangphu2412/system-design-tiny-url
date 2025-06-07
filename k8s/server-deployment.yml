@@ -19,11 +19,11 @@ spec:
           image: chuotcona123/tinyurl-server:latest
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "500m"
-            limits:
               memory: "512Mi"
               cpu: "1"
+            limits:
+              memory: "1Gi"
+              cpu: "2"
           ports:
             - containerPort: 3001
           env:

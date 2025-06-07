@@ -6,7 +6,7 @@ export const DATABASE_TOKEN = 'CASSANDRA_CLIENT';
 
 export const DatabaseProvider: Provider = {
   inject: [ConfigService],
-  provide: 'CASSANDRA_CLIENT',
+  provide: DATABASE_TOKEN,
   useFactory: async (configService: ConfigService) => {
     const client = new Client({
       contactPoints: [configService.getOrThrow('CASSANDRA_CONTACT_POINTS')],
@@ -22,11 +22,13 @@ export const DatabaseProvider: Provider = {
             };
         `.replace(/\n*/g, ''),
     );
+
     await client.execute(
       `CREATE TABLE IF NOT EXISTS shortener.urls (
               id text PRIMARY KEY,
               long_url text,
               created_at timestamp,
+              last_read_at timestamp,
             );`.replace(/\n*/g, ''),
     );
 
