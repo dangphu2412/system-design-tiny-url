@@ -10,6 +10,7 @@ short_code = ''
 class UrlPostUser(HttpUser):
     @task()
     def read_url(self):
+        global short_code
         if not short_code:
             response = self.client.post("/urls", json={"url": random_url()})
 

@@ -12,7 +12,7 @@ type TinyURLEntity = {
   long_url: string;
   created_at: string;
   last_read_at: string;
-}
+};
 
 @Injectable()
 export class UrlService {
@@ -105,14 +105,14 @@ export class UrlService {
   }
 
   private mapResultSetToEntities(resultSet: ResultSet): TinyURLEntity[] {
-    return resultSet.rows.map(row => {
+    return resultSet.rows.map((row) => {
       return {
         id: row.get('id'),
         long_url: row.get('long_url'),
         created_at: row.get('created_at'),
         last_read_at: row.get('last_read_at'),
-      }
-    })
+      };
+    });
   }
 
   /**
@@ -122,7 +122,10 @@ export class UrlService {
    */
   private async updateLastReadAt(id: string) {
     this.logger.log(`Update last read at: ${id}`);
-    await this.client.execute(`UPDATE urls SET last_read_at = toTimestamp(now()) WHERE id = ?`, [id]);
+    await this.client.execute(
+      `UPDATE urls SET last_read_at = toTimestamp(now()) WHERE id = ?`,
+      [id],
+    );
     this.logger.log(`Updated last read at: ${id}`);
   }
 }
