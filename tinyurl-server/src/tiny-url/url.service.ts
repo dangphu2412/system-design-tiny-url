@@ -39,8 +39,8 @@ export class UrlService {
 
     await this.client.manager.insert(URLsEntity, {
       id,
-      longURL: url
-    })
+      longURL: url,
+    });
 
     await this.saveToCache(id, url);
   }
@@ -97,7 +97,7 @@ export class UrlService {
   }
 
   private mapResultSetToEntities(resultSet): TinyURLEntity[] {
-    console.log(resultSet)
+    console.log(resultSet);
     return resultSet.map((row) => {
       return {
         id: row['id'],
@@ -114,11 +114,11 @@ export class UrlService {
    * -> Put it in async event queue to reduce DB workload
    */
   private async updateLastReadAt(id: string) {
-    this.logger.log(`Update last read at: ${id}`);
-    await this.client.query(
-      `UPDATE urls SET last_read_at = current_timestamp WHERE id = ?`,
-      [id],
-    );
-    this.logger.log(`Updated last read at: ${id}`);
+    // this.logger.log(`Update last read at: ${id}`);
+    // await this.client.query(
+    //   `UPDATE urls SET last_read_at = current_timestamp WHERE id = ?`,
+    //   [id],
+    // );
+    // this.logger.log(`Updated last read at: ${id}`);
   }
 }

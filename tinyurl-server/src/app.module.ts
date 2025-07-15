@@ -38,7 +38,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         logging: true, // Set to true to see SQL queries (can be verbose)
       }),
     }),
-    TypeOrmModule.forFeature([URLsEntity])
+    TypeOrmModule.forFeature([URLsEntity]),
   ],
   controllers: [UrlController],
   providers: [UrlService, ShortIdFactory],
