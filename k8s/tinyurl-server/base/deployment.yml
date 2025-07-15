@@ -32,9 +32,19 @@ spec:
               # REDIS
             - name: REDIS_URL
               value: redis://redis:6379
-
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_USER
+              value: user
+            - name: DB_PASSWORD
+              value: password
+            - name: DB_NAME
+              value: demo
             - name: CASSANDRA_CONTACT_POINTS
               value: cassandra
+
   strategy:
     type: RollingUpdate
     rollingUpdate:

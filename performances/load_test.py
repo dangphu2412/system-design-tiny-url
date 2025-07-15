@@ -1,4 +1,4 @@
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, tag
 import random
 import string
 
@@ -7,9 +7,10 @@ def random_url():
 
 short_codes = []
 
-class UrlPostUser(HttpUser):
+class NormalUserCreation(HttpUser):
     wait_time = between(0.1, 0.3)# seconds between tasks
 
+    @tag('post_url')
     @task(1)
     def post_url(self):
         response = self.client.post("/urls", json={"url": random_url()})
@@ -17,7 +18,8 @@ class UrlPostUser(HttpUser):
         if response.status_code == 201:
             short_codes.append(response.json().get("id"))
 
-    @task(99)  # 2x more read requests
+    @tag('read_url')
+    @task(40)  # 2x more read requests
     def read_url(self):
         if not short_codes:
             self.post_url()

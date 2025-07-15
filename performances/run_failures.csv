@@ -1,3 +1,0 @@
-Method,Name,Error,Occurrences
-POST,/urls,HTTPError('502 Server Error: Bad Gateway for url: /urls'),26
-GET,/:shortCode,HTTPError('502 Server Error: Bad Gateway for url: /:shortCode'),2215

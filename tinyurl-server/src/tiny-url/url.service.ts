@@ -1,11 +1,10 @@
-import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
-import { Client, types } from 'cassandra-driver';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateUrlDTO, CreateUrlDTOSchema } from './create-url.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ShortIdFactory } from './shortid-factory';
-import { DATABASE_TOKEN } from '../database/database';
 import { randomInt } from 'crypto';
-import ResultSet = types.ResultSet;
+import { DataSource } from 'typeorm';
+import { URLsEntity } from '../database/database';
 
 type TinyURLEntity = {
   id: string;
@@ -19,8 +18,7 @@ export class UrlService {
   private readonly logger = new Logger(UrlService.name);
 
   constructor(
-    @Inject(DATABASE_TOKEN)
-    private readonly client: Client,
+    private readonly client: DataSource,
     @Inject(CACHE_MANAGER)
     private readonly cache: Cache,
     private readonly shortIdFactory: ShortIdFactory,
@@ -39,16 +37,10 @@ export class UrlService {
   private async createShortUrl(id: string, url: string): Promise<void> {
     this.logger.log(`Storing id: ${id} and url: ${url}`, UrlService);
 
-    const result = await this.client.execute(
-      'INSERT INTO urls (id, long_url, created_at, last_read_at) VALUES (?, ?, toTimestamp(now()), toTimestamp(now())) IF NOT EXISTS',
-      [id, url],
-      { prepare: true },
-    );
-
-    if (!result.wasApplied()) {
-      this.logger.error(JSON.stringify(result.info));
-      throw new ConflictException('Existed url');
-    }
+    await this.client.manager.insert(URLsEntity, {
+      id,
+      longURL: url
+    })
 
     await this.saveToCache(id, url);
   }
@@ -59,7 +51,7 @@ export class UrlService {
   async find() {
     const query = `SELECT * FROM urls`;
 
-    const resultSet = await this.client.execute(query);
+    const resultSet = await this.client.query(query);
 
     return this.mapResultSetToEntities(resultSet);
   }
@@ -79,7 +71,7 @@ export class UrlService {
     // TODO: Need to prevent cache bursting
     const query = `SELECT * FROM urls where id = ?`;
 
-    const resultSet = await this.client.execute(query, [id]);
+    const resultSet = await this.client.query(query, [id]);
     const entity = this.mapResultSetToEntity(resultSet);
 
     if (entity) {
@@ -100,17 +92,18 @@ export class UrlService {
     return this.cache.set(id, url, TTL);
   }
 
-  private mapResultSetToEntity(resultSet: ResultSet): TinyURLEntity | null {
+  private mapResultSetToEntity(resultSet): TinyURLEntity | null {
     return this.mapResultSetToEntities(resultSet)?.[0];
   }
 
-  private mapResultSetToEntities(resultSet: ResultSet): TinyURLEntity[] {
-    return resultSet.rows.map((row) => {
+  private mapResultSetToEntities(resultSet): TinyURLEntity[] {
+    console.log(resultSet)
+    return resultSet.map((row) => {
       return {
-        id: row.get('id'),
-        long_url: row.get('long_url'),
-        created_at: row.get('created_at'),
-        last_read_at: row.get('last_read_at'),
+        id: row['id'],
+        long_url: row['long_url'],
+        created_at: row['created_at'],
+        last_read_at: row['last_read_at'],
       };
     });
   }
@@ -122,8 +115,8 @@ export class UrlService {
    */
   private async updateLastReadAt(id: string) {
     this.logger.log(`Update last read at: ${id}`);
-    await this.client.execute(
-      `UPDATE urls SET last_read_at = toTimestamp(now()) WHERE id = ?`,
+    await this.client.query(
+      `UPDATE urls SET last_read_at = current_timestamp WHERE id = ?`,
       [id],
     );
     this.logger.log(`Updated last read at: ${id}`);
