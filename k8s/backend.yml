@@ -37,9 +37,9 @@ spec:
             - name: DB_PORT
               value: '5432'
             - name: DB_USER
-              value: user
+              value: postgres
             - name: DB_PASSWORD
-              value: password
+              value: "241299"
             - name: DB_NAME
               value: demo
             - name: CASSANDRA_CONTACT_POINTS

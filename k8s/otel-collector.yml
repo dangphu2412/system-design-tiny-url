@@ -18,6 +18,9 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol-contrib
+          ports:
+            - name: grpc
+              containerPort: 4317
       volumes:
         - name: config
           configMap:
@@ -34,5 +37,5 @@ spec:
   ports:
     - name: grpc
       port: 4317
-      targetPort: grpc
+      targetPort: 4317
       protocol: TCP
