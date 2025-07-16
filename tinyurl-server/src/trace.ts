@@ -16,7 +16,7 @@ const sdk = new opentelemetry.NodeSDK({
   // resourceDetectors: getResourceDetectorsFromEnv(),
   // metricReader: getMetricReader(),
   traceExporter: new OTLPTraceExporter({
-    url: process.env.OLTP_EXPORTER
+    url: process.env.OLTP_EXPORTER,
   }),
 });
 

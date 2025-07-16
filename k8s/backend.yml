@@ -20,10 +20,10 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "1"
+              cpu: "0.5"
             limits:
-              memory: "512Gi"
-              cpu: "2"
+              memory: "512Mi"
+              cpu: "1"
           ports:
             - containerPort: 3001
           env:
@@ -44,6 +44,8 @@ spec:
               value: demo
             - name: CASSANDRA_CONTACT_POINTS
               value: cassandra
+            - name: OLTP_EXPORTER
+              value: otel-collector:4317
 
   strategy:
     type: RollingUpdate
@@ -94,8 +96,8 @@ metadata:
   labels:
     app: tinyurl-server
 spec:
-  maxReplicas: 4
-  minReplicas: 2
+  maxReplicas: 3
+  minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

@@ -12,7 +12,6 @@ spec:
       labels:
         app: otel-collector
     spec:
-      serviceAccountName: otel-collector
       containers:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.130.0
