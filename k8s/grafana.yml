@@ -97,6 +97,8 @@ spec:
             - containerPort: 14268  # Collector HTTP (OpenTelemetry)
             - containerPort: 14250  # gRPC Collector
             - containerPort: 9411   # Zipkin endpoint
+            - containerPort: 4317  # OTLP gRPC
+            - containerPort: 4318  # OTLP HTTP
 ---
 apiVersion: v1
 kind: Service
@@ -120,9 +122,9 @@ spec:
   selector:
     app: jaeger
   ports:
-    - name: grpc
-      port: 14250
-      targetPort: 14250
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
     - name: otlp-http
       port: 4318
       targetPort: 4318

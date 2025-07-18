@@ -46,7 +46,18 @@ spec:
               value: cassandra
             - name: OLTP_EXPORTER
               value: otel-collector:4317
-
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
   strategy:
     type: RollingUpdate
     rollingUpdate:
