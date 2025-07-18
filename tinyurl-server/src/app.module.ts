@@ -7,6 +7,7 @@ import { UrlService } from './tiny-url/url.service';
 import { ShortIdFactory } from './tiny-url/shortid-factory';
 import { URLsEntity } from './database/database';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -40,7 +41,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     }),
     TypeOrmModule.forFeature([URLsEntity]),
   ],
-  controllers: [UrlController],
+  controllers: [UrlController, HealthController],
   providers: [UrlService, ShortIdFactory],
 })
 export class AppModule {}

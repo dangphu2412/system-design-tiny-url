@@ -3,7 +3,7 @@ import { diag, DiagConsoleLogger } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import 'dotenv/config';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-const { credentials } = require('@grpc/grpc-js')
+const { credentials } = require('@grpc/grpc-js');
 // [START opentelemetry_instrumentation_setup_opentelemetry]
 
 diag.setLogger(new DiagConsoleLogger());

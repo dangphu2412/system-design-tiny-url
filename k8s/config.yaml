@@ -76,6 +76,12 @@ exporters:
 #      default_log_name: "opentelemetry.io/collector-exported-log"
   debug:
     verbosity: detailed
+  otlp:
+    # The endpoint uses a fully qualified domain name because Jaeger is in another namespace
+    endpoint: jaeger-collector.observability.svc.cluster.local:4317
+
+    tls:
+      insecure: true # Use insecure for cluster-internal communication
 
 processors:
   # Batch telemetry together to more efficiently send to GCP
@@ -83,14 +89,6 @@ processors:
     send_batch_max_size: 500
     send_batch_size: 500
     timeout: 1s
-  resource:
-    attributes:
-      - { key: "location", value: "us-central1", action: "upsert" }
-      - { key: "cluster", value: "no-cluster", action: "upsert" }
-      - { key: "namespace", value: "no-namespace", action: "upsert" }
-      - { key: "job", value: "us-job", action: "upsert" }
-      - { key: "instance", value: "us-instance", action: "upsert" }
-  # If running on GCP (e.g. on GKE), detect resource attributes from the environment.
   resourcedetection:
     detectors: ["env", "gcp"]
 
@@ -99,10 +97,10 @@ service:
     traces:
       receivers: ["otlp"]
       processors: ["batch", "resourcedetection"]
-      exporters: ["debug"]
+      exporters: ["debug", "otlp"]
     metrics:
       receivers: ["otlp"]
-      processors: ["batch", "resourcedetection", "resource"]
+      processors: ["batch", "resourcedetection"]
       exporters: ["debug"]
     logs:
       receivers: ["filelog"]

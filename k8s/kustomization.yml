@@ -5,6 +5,8 @@ resources:
   - backend.yml
   - pg-deployment.yml
   - otel-collector.yml
+  - grafana.yml
+  - redis-deployment.yml
 
 configMapGenerator:
   - name: otel-collector-config
