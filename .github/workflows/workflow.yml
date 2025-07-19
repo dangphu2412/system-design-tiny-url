@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - tinyurl-server
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
