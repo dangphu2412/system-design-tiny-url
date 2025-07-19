@@ -9,11 +9,22 @@ data:
   datasource.yaml: |
     apiVersion: 1
     datasources:
-      - name: Prometheus
-        type: prometheus
+      - name: Jaeger
+        type: jaeger
         access: proxy
-        url: http://prometheus.default.svc.cluster.local:9090
-        isDefault: true
+        url: http://jaeger-query.observability.svc.cluster.local:16686
+        jsonData:
+          tracesToLogs:
+    #        datasourceUid: 'loki'  # optional, if you have Loki set up
+          spanBarType: 'Time and Count'
+          nodeGraph:
+            enabled: true
+#      - name: Prometheus
+#        type: prometheus
+#        access: proxy
+#        url: http://prometheus.default.svc.cluster.local:9090
+#        isDefault: true
+
 ---
 apiVersion: apps/v1
 kind: Deployment
