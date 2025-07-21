@@ -19,11 +19,11 @@ data:
           spanBarType: 'Time and Count'
           nodeGraph:
             enabled: true
-#      - name: Prometheus
-#        type: prometheus
-#        access: proxy
-#        url: http://prometheus.default.svc.cluster.local:9090
-#        isDefault: true
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.default.svc.cluster.local:9090
+        isDefault: true
 
 ---
 apiVersion: apps/v1
