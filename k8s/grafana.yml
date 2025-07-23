@@ -15,7 +15,7 @@ data:
         url: http://jaeger-query.observability.svc.cluster.local:16686
         jsonData:
           tracesToLogs:
-    #        datasourceUid: 'loki'  # optional, if you have Loki set up
+          #        datasourceUid: 'loki'  # optional, if you have Loki set up
           spanBarType: 'Time and Count'
           nodeGraph:
             enabled: true
@@ -24,6 +24,10 @@ data:
         access: proxy
         url: http://prometheus.default.svc.cluster.local:9090
         isDefault: true
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.default.svc.cluster.local:3100
 
 ---
 apiVersion: apps/v1

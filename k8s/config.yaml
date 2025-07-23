@@ -11,68 +11,68 @@ receivers:
   # This config reads JSON logs in same format that the Cloud Logging agents
   # support:
   # https://cloud.google.com/logging/docs/structured-logging#special-payload-fields
-  filelog:
-    start_at: beginning
-    include:
-      - "/var/log/app.log"
-    operators:
-      - type: json_parser
-        parse_to: body
-        timestamp:
-          parse_from: body.timestamp
-          layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-        severity:
-          parse_from: body.severity
-          preset: none
-          # parse minimal set of severity strings that Cloud Logging explicitly supports
-          # https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
-          mapping:
-            debug: debug
-            info: info
-            info3: notice
-            warn: warning
-            error: error
-            fatal: critical
-            fatal3: alert
-            fatal4: emergency
-
-      # set trace_flags to SAMPLED if GCP attribute is set to true
-      - type: add
-        field: body.trace_flags
-        value: "01"
-        if: body["logging.googleapis.com/trace_sampled"] == true
-
-      # parse the trace context fields from GCP attributes
-      - type: regex_parser
-        parse_from: body["logging.googleapis.com/trace"]
-        parse_to: body
-        regex: (?P<trace_id>.*)
-        trace:
-          span_id:
-            parse_from: body["logging.googleapis.com/spanId"]
-
-      # Remove fields that are redundant from translation above and already
-      # included in OTel LogEntry message
-      - type: remove
-        field: body.timestamp
-      - type: remove
-        field: body.trace_id
-      - type: remove
-        field: body.trace_flags
-      - type: remove
-        field: body.severity
-      - type: remove
-        field: body["logging.googleapis.com/trace"]
-      - type: remove
-        field: body["logging.googleapis.com/spanId"]
-      - type: remove
-        field: body["logging.googleapis.com/trace_sampled"]
+#  filelog:
+#    start_at: beginning
+#    include:
+#      - "/var/log/app.log"
+#    operators:
+#      - type: json_parser
+#        parse_to: body
+#        timestamp:
+#          parse_from: body.timestamp
+#          layout: '%Y-%m-%dT%H:%M:%S.%fZ'
+#        severity:
+#          parse_from: body.severity
+#          preset: none
+#          # parse minimal set of severity strings that Cloud Logging explicitly supports
+#          # https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
+#          mapping:
+#            debug: debug
+#            info: info
+#            info3: notice
+#            warn: warning
+#            error: error
+#            fatal: critical
+#            fatal3: alert
+#            fatal4: emergency
+#
+#      # set trace_flags to SAMPLED if GCP attribute is set to true
+#      - type: add
+#        field: body.trace_flags
+#        value: "01"
+#        if: body["logging.googleapis.com/trace_sampled"] == true
+#
+#      # parse the trace context fields from GCP attributes
+#      - type: regex_parser
+#        parse_from: body["logging.googleapis.com/trace"]
+#        parse_to: body
+#        regex: (?P<trace_id>.*)
+#        trace:
+#          span_id:
+#            parse_from: body["logging.googleapis.com/spanId"]
+#
+#      # Remove fields that are redundant from translation above and already
+#      # included in OTel LogEntry message
+#      - type: remove
+#        field: body.timestamp
+#      - type: remove
+#        field: body.trace_id
+#      - type: remove
+#        field: body.trace_flags
+#      - type: remove
+#        field: body.severity
+#      - type: remove
+#        field: body["logging.googleapis.com/trace"]
+#      - type: remove
+#        field: body["logging.googleapis.com/spanId"]
+#      - type: remove
+#        field: body["logging.googleapis.com/trace_sampled"]
   prometheus:
     config:
       scrape_configs:
         - job_name: 'otel-metrics'
           static_configs:
-            - targets: ['your-app.default.svc.cluster.local:8080']
+            - targets: ['tinyurl-service.default.svc.cluster.local:8080']
 
 exporters:
   # Export logs and traces using the standard googelcloud exporter
@@ -80,12 +80,11 @@ exporters:
 #    project: "one-global-chorus-cam-dev"
 #    log:
 #      default_log_name: "opentelemetry.io/collector-exported-log"
-  debug:
-    verbosity: detailed
+#  debug:
+#    verbosity: detailed
   otlp:
     # The endpoint uses a fully qualified domain name because Jaeger is in another namespace
     endpoint: jaeger-collector.observability.svc.cluster.local:4317
-
     tls:
       insecure: true # Use insecure for cluster-internal communication
   prometheus:
@@ -114,5 +113,5 @@ service:
       exporters: ["prometheus"]
     logs:
       receivers: ["otlp"]
-      processors: ["batch"]
+      processors: ["batch", "resourcedetection"]
       exporters: ["loki"]
