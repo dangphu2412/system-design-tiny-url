@@ -27,7 +27,7 @@ const sdk = new opentelemetry.NodeSDK({
     url: process.env.OLTP_EXPORTER,
     credentials: credentials.createInsecure(),
   }),
-  logRecordProcessor: logRecordProcessor
+  logRecordProcessor: logRecordProcessor,
 });
 
 try {

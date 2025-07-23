@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - tinyurl-server
+      - tinyurl-server/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
