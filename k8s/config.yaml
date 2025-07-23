@@ -113,6 +113,6 @@ service:
       processors: ["batch", "resourcedetection"]
       exporters: ["prometheus"]
     logs:
-      receivers: ["filelog"]
-      processors: ["batch", "resourcedetection"]
+      receivers: ["otlp"]
+      processors: ["batch"]
       exporters: ["loki"]

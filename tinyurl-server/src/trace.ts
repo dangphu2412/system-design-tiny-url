@@ -3,9 +3,19 @@ import { diag, DiagConsoleLogger } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import 'dotenv/config';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
+
 const { credentials } = require('@grpc/grpc-js');
 
 diag.setLogger(new DiagConsoleLogger());
+
+const logExporter = new OTLPLogExporter({
+  url: process.env.OLTP_EXPORTER, // e.g., 'http://localhost:4317'
+  credentials: credentials.createInsecure(),
+});
+
+const logRecordProcessor = new BatchLogRecordProcessor(logExporter);
 
 const sdk = new opentelemetry.NodeSDK({
   serviceName: 'tinyurl-service',
@@ -17,6 +27,7 @@ const sdk = new opentelemetry.NodeSDK({
     url: process.env.OLTP_EXPORTER,
     credentials: credentials.createInsecure(),
   }),
+  logRecordProcessor: logRecordProcessor
 });
 
 try {
