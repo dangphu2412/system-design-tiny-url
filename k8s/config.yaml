@@ -90,7 +90,7 @@ exporters:
   prometheus:
     endpoint: "0.0.0.0:9090"
   loki:
-    endpoint: "http://loki.logging.svc.cluster.local:3100/loki/api/v1/push"
+    endpoint: "http://loki.default.svc.cluster.local:3100/loki/api/v1/push"
 
 processors:
   # Batch telemetry together to more efficiently send to GCP
@@ -100,6 +100,11 @@ processors:
     timeout: 1s
   resourcedetection:
     detectors: ["env", "gcp"]
+  attributes:
+    actions:
+      - key: "app"
+        value: "tiny-service"
+        action: upsert
 
 service:
   pipelines:

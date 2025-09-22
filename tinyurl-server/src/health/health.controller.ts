@@ -1,9 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 
 @Controller('health')
 export class HealthController {
-  @Get('/')
+  constructor(private readonly dataSource: DataSource) {
+  }
+
+  @Get('/readyz')
   getHealth() {
-    return 'Health';
+    return this.dataSource.isInitialized;
   }
 }

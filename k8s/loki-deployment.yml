@@ -1,29 +1,31 @@
-# /loki-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: loki-config
-  labels:
-    app.kubernetes.io/name: loki
 data:
-  loki.yaml: |
+  loki-config.yaml: |
     auth_enabled: false
 
     server:
       http_listen_port: 3100
-      grpc_listen_port: 9096
+      grpc_listen_port: 9095
 
-    common:
-      path_prefix: /loki
-      storage:
-        filesystem:
-          chunks_directory: /loki/chunks
-          rules_directory: /loki/rules
-      replication_factor: 1
-      ring:
-        instance_addr: 127.0.0.1
-        kvstore:
-          store: inmemory
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+        final_sleep: 0s
+      wal:
+        enabled: true
+        dir: /data/wal
+      chunk_idle_period: 3m
+      max_chunk_age: 1h
+
+    compactor:
+      working_directory: /data/compactor
+      shared_store: filesystem
 
     schema_config:
       configs:
@@ -35,78 +37,67 @@ data:
             prefix: index_
             period: 24h
 
-    ruler:
-      alertmanager_url: http://localhost:9093
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /data/index
+        cache_location: /data/cache
+        shared_store: filesystem
+      filesystem:
+        directory: /data/chunks
+
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+
+    chunk_store_config:
+      max_look_back_period: 0s
+
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 7d
 ---
-# /loki-statefulset.yaml
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: loki
-  labels:
-    app.kubernetes.io/name: loki
 spec:
-  serviceName: loki
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: loki
+      app: loki
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: loki
+        app: loki
     spec:
-      securityContext:
-        fsGroup: 10001
-        runAsUser: 10001
       containers:
         - name: loki
-          image: grafana/loki:2.9.0
+          image: grafana/loki:2.9.3
           args:
-            - "-config.file=/etc/loki/loki.yaml"
+            - -config.file=/etc/loki/loki-config.yaml
           ports:
-            - name: http
-              containerPort: 3100
-              protocol: TCP
-            - name: grpc
-              containerPort: 9096
-              protocol: TCP
+            - containerPort: 3100
           volumeMounts:
+            - name: data
+              mountPath: /data
             - name: config
               mountPath: /etc/loki
-            - name: storage
-              mountPath: /loki
       volumes:
+        - name: data
+          emptyDir: {}
         - name: config
           configMap:
             name: loki-config
-  volumeClaimTemplates:
-    - metadata:
-        name: storage
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 10Gi
 ---
-# /loki-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: loki
-  labels:
-    app.kubernetes.io/name: loki
 spec:
-  type: ClusterIP
+  selector:
+    app: loki
   ports:
     - name: http
       port: 3100
-      targetPort: http
-      protocol: TCP
-    - name: grpc
-      port: 9096
-      targetPort: grpc
-      protocol: TCP
-  selector:
-    app.kubernetes.io/name: loki
+      targetPort: 3100
