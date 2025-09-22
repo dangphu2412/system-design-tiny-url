@@ -9,6 +9,10 @@ spec:
   selector:
     matchLabels:
       app: tinyurl-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   template:
     metadata:
       labels:
@@ -20,7 +24,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "0.5"
+              cpu: "500m"
             limits:
               memory: "512Mi"
               cpu: "1"
@@ -30,13 +34,12 @@ spec:
           env:
             - name: PORT
               value: "3000"
-              # REDIS
             - name: REDIS_URL
               value: redis://redis:6379
             - name: DB_HOST
               value: postgres
             - name: DB_PORT
-              value: '5432'
+              value: "5432"
             - name: DB_USER
               value: postgres
             - name: DB_PASSWORD
@@ -53,16 +56,44 @@ spec:
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 10
+#
+#        - name: cloud-sql-proxy
+#          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+#          args:
+#            - "--private-ip"
+#            - "--structured-logs"
+#            - "--port=5432"
+#            - "--health-check"
+#          resources:
+#            requests:
+#              cpu: "100m"
+#              memory: "128Mi"
+#            limits:
+#              cpu: "200m"
+#              memory: "256Mi"
+#          startupProbe:
+#            httpGet:
+#              path: /startup
+#              port: 9090
+#            periodSeconds: 1
+#            timeoutSeconds: 5
+#            failureThreshold: 20
 #          livenessProbe:
 #            httpGet:
-#              path: /health
-#              port: 3001
-#            initialDelaySeconds: 30
+#              path: /liveness
+#              port: 9801
+#            initialDelaySeconds: 0
+#            periodSeconds: 60
+#            timeoutSeconds: 30
+#            failureThreshold: 5
+#          readinessProbe:
+#            httpGet:
+#              path: /readiness
+#              port: 9090
 #            periodSeconds: 10
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
+#            timeoutSeconds: 5
+#            failureThreshold: 3
+
 
 ---
 apiVersion: v1

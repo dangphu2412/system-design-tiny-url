@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
   - backend.yml
   - pg-deployment.yml
-  - otel-collector.yml
-  - grafana.yml
+#  - otel-collector.yml
+#  - grafana.yml
   - redis-deployment.yml
 #  - prometheus-deployment.yml
 #  - loki-deployment.yml
@@ -17,3 +17,6 @@ configMapGenerator:
 
 generatorOptions:
   disableNameSuffixHash: true
+
+patches:
+  - path: resource.yaml

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinyurl-server-deployment
+  labels:
+    app: tinyurl-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinyurl-server
+  template:
+    metadata:
+      labels:
+        app: tinyurl-server
+    spec:
+      containers:
+        - name: tinyurl-server
+          image: chuotcona123/tinyurl-server:latest
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "0.5"
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+          ports:
+            - containerPort: 3000
+              name: http
