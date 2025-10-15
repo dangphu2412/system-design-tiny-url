@@ -18,7 +18,7 @@ export class URLsEntity {
   id: string;
 
   @Column({
-    name: 'long_url',
+    name: 'name',
     type: 'varchar',
     default: '""',
   })

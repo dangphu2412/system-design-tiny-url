@@ -61,7 +61,6 @@ export class UrlService {
 
     if (url !== null) {
       this.logger.log(`Cache hit on ${url}`);
-      this.updateLastReadAt(id);
 
       return {
         long_url: url,
@@ -78,7 +77,6 @@ export class UrlService {
       await this.saveToCache(entity.id, entity.long_url);
     }
 
-    this.updateLastReadAt(id);
     return entity;
   }
 
@@ -97,7 +95,6 @@ export class UrlService {
   }
 
   private mapResultSetToEntities(resultSet): TinyURLEntity[] {
-    console.log(resultSet);
     return resultSet.map((row) => {
       return {
         id: row['id'],
@@ -106,19 +103,5 @@ export class UrlService {
         last_read_at: row['last_read_at'],
       };
     });
-  }
-
-  /**
-   * TODO:
-   * - Cons: This operation cause overhead to database due to update during read
-   * -> Put it in async event queue to reduce DB workload
-   */
-  private async updateLastReadAt(id: string) {
-    // this.logger.log(`Update last read at: ${id}`);
-    // await this.client.query(
-    //   `UPDATE urls SET last_read_at = current_timestamp WHERE id = ?`,
-    //   [id],
-    // );
-    // this.logger.log(`Updated last read at: ${id}`);
   }
 }
